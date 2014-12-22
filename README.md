@@ -4,7 +4,7 @@ A solution to the Khan Challenge Project. Compares code against templates.
 
 ### Example
 
-Open 'editor.html' to mess around, or [try it here](http://therottingcartridge.com/test/khan/editor.html). :)
+Open 'editor.html' to mess around, or [try it here](http://therottingcartridge.com/test/khan/editor.html).
 
 Tested in latest versions of Chrome, Firefox, Safari, and IE.
 
