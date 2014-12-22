@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Khan Challenge Project - Ian Arawjo</title>
+  <link rel="stylesheet" type="text/css" href="css/main.css">
+  <script src="acorn/acorn.js"></script>
+  <script src="khanalyze.js"></script>
+</head>
+<body>
+
+<!-- DEFAULT CODE -->
+<pre id="editor">function foo(items) {
+    var i;
+    for (i = 0; i &lt; items.length; i++) {
+        // uncomment this line:
+        //if (i === 0) { }
+    }
+}</pre>
+
+<!-- LIST DISPLAY -->
+<div id="template">
+  <button onclick="setup_test1()">(1) whitelist test</button>
+  <button onclick="setup_test2()">(2) blacklist test</button>
+  <button onclick="setup_test3()">(3) structure test</button>
+  <h3 id="whitehd">Whitelist</h3>
+  <pre id="whitelist" class="list">ForStatement
+VariableDeclaration</pre>
+  <h3 id="blackhd">Blacklist</h3>
+  <pre id="blacklist" class="list">IfStatement
+WhileStatement</pre>
+  <h3 id="structhd">Structural</h3>
+  <pre id="structural" class="list">for (...) { 
+    if (...) {}
+}</pre>
+<p>Instructions: Enter AST <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/Parser_API">type names</a>
+    on separate lines in the appropriate list. Structural ('forgetful') input is experimental. </p>
+    <p>Outstanding issue: support for multiple blacklisted annotations of the same type</p>
+    <p>by Ian Arawjo</p>
+</div>
+
+<!-- INTERFACE -->
+<!-- * Uses ace editor available @ http://ace.c9.io/ * -->
+<script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script>
+
+    // Common variables and functions
+    var acorn = window.acorn;
+    var khanalyze = window.khanalyze;
+
+    // Tell khanalyze to use acorn parser
+    khanalyze.setParser(acorn, { locations:true });
+
+    var clearMarkers = function(editor) {
+        var ms = editor.session.getMarkers();
+        for (var m in ms)
+            editor.session.removeMarker(m);
+    }
+    var markTextList = function(text_editor, list, included, markCSS) {
+        included = included.slice(0);
+        var Range = ace.require("ace/range").Range;
+        var i;
+        while (included.length > 0) {
+            var elem = included.pop();
+            i = 0;
+            for(; i < list.length; i++) {
+
+                // Mark lines in list editor containing snippets in 'included'
+                if (elem.raw === list[i]) {
+                    text_editor.session.addMarker(new Range(i,0,i,200), markCSS, "fullLine");
+                    break;
+                }
+            }
+        }
+    }
+    var annotateCode = function(editor, included) {
+        included = included.slice(0);
+        var elem, txt;
+        var annots = [];
+        while(included.length > 0) {
+            elem = included.pop();
+
+            // Convert typename to something more readable, e.g. "IfStatement" => "if statement"
+            txt = elem.raw.match(/([A-Z]?[^A-Z]*)/g).slice(0,-1); // thanks to andrewmu @ SO: http://goo.gl/rnctAv
+            var i;
+            for(i = 0; i < txt.length; i++)
+                txt[i] = txt[i].toLowerCase();
+            txt = txt.join(" ");
+
+            // Add annotation
+            annots.push({
+                row: elem.start.line-1,
+                text: "No " + txt + "s, please!",
+                type: "error"
+            });
+        }
+        editor.session.setAnnotations(annots);
+    }
+
+    // String arrays for the three lists
+    var whitelist = null;
+    var blacklist = null;
+    var structAST = null;
+
+    // User's code editor
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.getSession().setMode("ace/mode/javascript");
+    editor.getSession().setUseWorker(false); // no code checking
+
+    // Whitelist editor
+    var white_editor = ace.edit("whitelist");
+    white_editor.getSession().setMode("ace/mode/text");
+    white_editor.on("change", function(e) { // Update whitelist when text changes.
+        clearMarkers(white_editor);
+        var text = white_editor.getSession().getValue();
+        if (text.length > 0) {
+            whitelist = text.split("\n");
+            for (var i = 0; i < whitelist.length; i++)
+                whitelist[i] = whitelist[i].trim();
+        } else whitelist = null;
+        khanalyze.setCheck('whitelist', whitelist);
+    });
+    whitelist = white_editor.getSession().getValue().split("\n");
+    khanalyze.setCheck('whitelist', whitelist);
+
+    // Blacklist editor
+    var black_editor = ace.edit("blacklist");
+    black_editor.getSession().setMode("ace/mode/text");
+    black_editor.on("change", function(e) { // Update blacklist when text changes.
+        clearMarkers(black_editor);
+        var text = black_editor.getSession().getValue();
+        if (text.length > 0) {
+            blacklist = text.split("\n");
+            for (var i = 0; i < blacklist.length; i++)
+                blacklist[i] = blacklist[i].trim();
+        } else blacklist = null;
+        khanalyze.setCheck('blacklist', blacklist);
+    });
+    blacklist = black_editor.getSession().getValue().split("\n");
+    khanalyze.setCheck('blacklist', blacklist);
+
+    // Structure editor
+    var template = ace.edit("structural");
+    template.setTheme("ace/theme/xcode");
+    template.getSession().setMode("ace/mode/javascript");
+    template.getSession().setUseWorker(false); // no code checking
+    template.on("change", function(e) { // Update structure when code changes.
+        clearMarkers(template);
+        var code = template.getSession().getValue().trim();
+        if (code.length === 0) return;
+        try {
+            var ast = acorn.parse(code); // modified acorn parser
+            structAST = ast;
+        } catch (e) {
+            structAST = null;
+        }
+        khanalyze.setCheck('structural', structAST);
+    });
+    structAST = acorn.parse(template.getSession().getValue());
+    khanalyze.setCheck('structural', structAST);
+
+    // Clear markers (highlighted lines) in all lists
+    var clearAllMarkers = function() {
+        clearMarkers(white_editor);
+        clearMarkers(black_editor);
+        clearMarkers(template);
+    }
+
+    // Test the code!
+    var testit = function() {
+
+        // Clear markers on text lists
+        clearAllMarkers();
+
+        // Clear any annotations
+        editor.session.clearAnnotations();
+
+        // Try to test code
+        var feedback = khanalyze.test(editor.getSession().getValue());
+        if (feedback === null) {
+            // Code can't be parsed. Do nothing.
+            return;
+        }
+
+        // Interpret results for each list + update UI
+        // -------------------------------------------
+        // Interpret whitelist
+        if (feedback['whitelist'] !== null) {
+
+            var included = feedback['whitelist'].included;
+
+            // Update UI
+            markTextList(white_editor, whitelist, included, "ace_correct");            
+        }
+
+        // Interpret blacklist
+        if (feedback['blacklist'] !== null) {
+
+            var included = feedback['blacklist'].included;
+
+            // Update UI
+            markTextList(black_editor, blacklist, included, "ace_incorrect");
+            annotateCode(editor, included); // add gutter annotations
+        }
+
+        // Interpret structure
+        if (feedback['structural'] !== null) {
+
+            var missing = feedback['structural'].missing;
+
+            // If code includes structure, update UI to reflect it
+            if (missing.length === 0) { 
+                var Range = ace.require("ace/range").Range;
+                template.session.addMarker(new Range(0,0,template.session.getDocument().getLength(),200),"ace_correct","fullLine");
+            }
+        }
+    }
+
+    // When the user changes the code,
+    // or enters the code editor,
+    // test their code against the constraints.
+    editor.on("change", function(e) {
+        testit(); 
+    });
+    editor.on("focus", function(e) {
+        testit();
+    });
+
+    // Setup button callbacks 
+    var setup_test1 = function() {
+        white_editor.setValue("ForStatement\nVariableDeclaration", 1);
+        black_editor.setValue("", 1);
+        template.setValue("", 1);
+        testit();
+    }
+    var setup_test2 = function() {
+        white_editor.setValue("", 1);
+        black_editor.setValue("WhileStatement\nIfStatement", 1);
+        template.setValue("", 1);
+        testit();
+    }
+    var setup_test3 = function() {
+        white_editor.setValue("", 1);
+        black_editor.setValue("", 1);
+        template.setValue("for (...) {\n\tif (...) {}\n}", 1);
+        testit();
+    }
+
+    // Test the default code (to fill list markers)
+    setTimeout(testit(), 0);
+
+</script>
+
+</body>
+</html>
