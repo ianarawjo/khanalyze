@@ -9,7 +9,7 @@ Open 'editor.html' to mess around, or [try it here](http://therottingcartridge.c
 Tested in latest versions of Chrome, Firefox, Safari, and IE.
 
 ### API methods
-- **setParser(parser,options)**: Sets parser (see method for more info)
+- **setParser(parser,options)**: Sets JS code parser (see src for more details)
 - **setCheck(name, template)**: Add or update a check to be performed during .test.
 - **removeCheck(name)**
 - **removeAllChecks()**
