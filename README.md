@@ -4,7 +4,9 @@ A solution to the Khan Challenge Project. Compares code against templates.
 
 ### Example
 
-Open 'editor.html' to mess around!
+Open 'editor.html' to mess around! 
+
+Tested in latest versions of Chrome, Firefox, Safari, and IE.
 
 ### API methods
 - **setParser(parser,options)**: Sets parser (see method for more info)
@@ -17,7 +19,7 @@ For checks, template can be one of:
 - `typename`: ex. 'ForStatement'
 - `[typename]`: ex. ['IfStatement', 'VariableDeclaration']
 - `ast`: ex. { type:'ForStatement' } (this is equivalent to the first example)
-- `[ast]`: ex. [{ type:'IfStatement' }, { type:'VariableDeclaration' }]  (same as 2nd example)
+- `[ast]`: ex. \[{ type:'IfStatement' }, { type:'VariableDeclaration' }\]  (same as 2nd example)
 
 Thus the code analyzer can take another AST as a template. Because of the
 large number of cases, this functionality is not completely guaranteed
