@@ -184,7 +184,7 @@
   // | for an object with the type 'ForStatement' -- 
   // | it doesn't care about any other properties of the ForStatement
   // | unless they were specified in the template.
-	var forgetfulMatch = function(node, templateAST) {
+  var forgetfulMatch = function(node, templateAST) {
     var mark = markup([], []);
     var finalresult = true;
     var orig_template;
@@ -209,17 +209,17 @@
       }
     }
 
-		// Looks for JSON which matches 'structure' inside AST.
+    // Looks for JSON which matches 'structure' inside AST.
     // * Parameters: AST, visitorNode, compare_properties function.
-		function match(A, V, c) {
+    function match(A, V, c) {
 
-			// Compare literals
-			if (A === V) {
-				
+      // Compare literals
+      if (A === V) {
+        
         // Matching literals
-				return true;
-			}
-			else if (A instanceof Array) { // If A is an array, compare visitor V against all elements in A
+        return true;
+      }
+      else if (A instanceof Array) { // If A is an array, compare visitor V against all elements in A
 
         // Treat V as array
         if (V instanceof Array === false)
@@ -231,13 +231,13 @@
         // | of V. So if V has more elements of A, A cannot
         // | possibly fulfill V and we return false.
         // | If V has zero elements, the result is vacuously true.
-				if (V.length > A.length) return false;
-				if (V.length === 0) return true;
+        if (V.length > A.length) return false;
+        if (V.length === 0) return true;
 
         // Compare all elements of array
-				var i = 0, j = 0, r = false;
-				var result = true;
-				for (; i < V.length; i++) { // loop over visitors.
+        var i = 0, j = 0, r = false;
+        var result = true;
+        for (; i < V.length; i++) { // loop over visitors.
           j = 0;
           r = false;
 
@@ -272,72 +272,72 @@
     }
 
     // Compare properties of two objects, node and visitor. (recursive)
-		function compare_properties(node, visitor, override) {
-			var type = override || node.type;
-			var cresult = false;
+    function compare_properties(node, visitor, override) {
+      var type = override || node.type;
+      var cresult = false;
 
-			// Only perform comparison when node type matches visitor node type
-			if (visitor["type"] === type) {
-				visitorTypeInNode = true;
-				cresult = true;
+      // Only perform comparison when node type matches visitor node type
+      if (visitor["type"] === type) {
+        visitorTypeInNode = true;
+        cresult = true;
 
         // Compare properties of same-type objects:
-				for (var property in visitor) {
-					if (visitor.hasOwnProperty(property)) {
-						if (property === "type" || property === "start" || property === "end" || property === "loc") {
-							continue; // we don't care about these properties...
-						}
-						else if (node.hasOwnProperty(property)) {
-							
+        for (var property in visitor) {
+          if (visitor.hasOwnProperty(property)) {
+            if (property === "type" || property === "start" || property === "end" || property === "loc") {
+              continue; // we don't care about these properties...
+            }
+            else if (node.hasOwnProperty(property)) {
+              
               // Determine whether properties match
-							cresult = match(node[property], visitor[property], compare_properties) && cresult;
-						}
-						else {
-							
+              cresult = match(node[property], visitor[property], compare_properties) && cresult;
+            }
+            else {
+              
               // Visitor property is not in this node. 
               // Templates don't match -- cascade false up the call stack.
-							cresult = false;
-						}
+              cresult = false;
+            }
           }
 
           // Quit if one property doesn't match
           if (cresult === false)
             break;
-				}
-				
+        }
+        
         // Append line position info for a correct match
         if (cresult === true && node.loc) {
           line_info = snippet(null, node.loc.start, node.loc.end);
         }
 
-				finalresult = finalresult || cresult;
-			}
-			else if (visitor["type"] === "Wildcard") {
-				return true;
-			}
-			else {
+        finalresult = finalresult || cresult;
+      }
+      else if (visitor["type"] === "Wildcard") {
+        return true;
+      }
+      else {
         
         // Recurse into node if types don't match. 
         // Compare visitor to all subnodes.
         base[type](node, visitor, compare_properties);
-			}
+      }
 
       // Return whether properties were equal. 
       // * (irrelevant unless called within match method) *
-			return cresult;
-		}
+      return cresult;
+    }
 
     // Try to match all elements in template to AST
-		var arraymux = true;
+    var arraymux = true;
     var k = 0;
-		for (; k < templateAST.length; k++) {
+    for (; k < templateAST.length; k++) {
 
       // 'finalresult' acts like a global in this scope,
       // containing the result of the test.
-			finalresult = false;
+      finalresult = false;
 
       // Compare template k to AST
-			compare_properties(node, templateAST[k], null);
+      compare_properties(node, templateAST[k], null);
 
       // Generate markup from result
       if (finalresult === true) {
@@ -346,9 +346,9 @@
       } else
         mark.missing.push(orig_template[k]);
 
-		}
+    }
 
-		return mark;
+    return mark;
   };
 
 
